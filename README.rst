@@ -1,13 +1,13 @@
 SimpleURL
-====
+=========
 
 SimpleURL
-======
+=========
 
 SimpleURL is based on Werkzeug routing system for Brubeck.
 
 Why not use regex based routing system?
-----
+---------------------------------------
 
 - Regex is hard.
 
@@ -15,7 +15,7 @@ Why not use regex based routing system?
 
 - Easy to make mistake.
     Example
-    ----
+    -------
     @app.add_url_route('^/brubeck')
     @app.add_url_route('^/brubeck/\d')
 
@@ -26,7 +26,7 @@ Why not use regex based routing system?
 
 
 Why Werkzeug ?
-----
+--------------
 
 - Simple
 
@@ -41,7 +41,7 @@ Why Werkzeug ?
 
 
 Talk is cheap, show me the code
-----
+-------------------------------
 
 ```
 #! /usr/bin/env python
@@ -90,7 +90,7 @@ app.run()
 If URL Rule is not found `werkzeug.exceptions.NotFound: 404: Not Found` is raised
 
 Note:
----
+-----
 From Flask quick start page
 
 Unique URLs / Redirection Behavior
@@ -113,12 +113,12 @@ In the second case, however, the URL is defined without a trailing slash, rather
 This behavior allows relative URLs to continue working if users access the page when they forget a trailing slash, consistent with how Apache and other servers work. Also, the URLs will stay unique, which helps search engines avoid indexing the same page twice.
 
 Reference
-----
+---------
 
 For more info about `Werkzeug Routing <http://werkzeug.pocoo.org/docs/routing/>`_.
 ```
 Development
----
+-----------
 
 The SimpleURL development version can be installed by cloning the git
 repository from `github`_::
