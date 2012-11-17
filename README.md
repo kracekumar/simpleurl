@@ -1,4 +1,3 @@
-
 SimpleURL
 =========
 
@@ -15,7 +14,6 @@ Why not use regex based routing system?
 - Easy to make mistake.
 
     - Example
-      -------
 
     ```
     @app.add_url_route('^/brubeck')
@@ -90,17 +88,20 @@ app.add_route_url('/', 'index', index)
 app.add_route_url('/one', 'one', one)
 app.run()
 
-If URL Rule is not found `werkzeug.exceptions.NotFound: 404: Not Found` is raised
+# If URL Rule is not found `werkzeug.exceptions.NotFound: 404: Not Found` is raised
+```
 
 Note:
 -----
 From Flask quick start page
 
 Unique URLs / Redirection Behavior
+------
 The idea behind that module is to ensure beautiful and unique URLs based on precedents laid down by Apache and earlier HTTP servers.
 
 Take these two rules:
 
+```
 @app.add_route('/projects/')
 def projects():
     return render('The project page', 200, 'OK', {})
@@ -108,6 +109,7 @@ def projects():
 @app.add_route('/about')
 def about():
     return render('The about page', 200, 'OK', {})
+```
 
 Though they look rather similar, they differ in their use of the trailing slash in the URL definition. In the first case, the canonical URL for the projects endpoint has a trailing slash. In that sense, it is similar to a folder on a file system. Accessing it without a trailing slash will cause Flask to redirect to the canonical URL with the trailing slash.
 
@@ -118,15 +120,15 @@ This behavior allows relative URLs to continue working if users access the page 
 Reference
 ---------
 
-For more info about `Werkzeug Routing <http://werkzeug.pocoo.org/docs/routing/>`_.
+For more info about [Werkzeug Routing](http://werkzeug.pocoo.org/docs/routing/)
 
 
 Development
 -----------
 
 The SimpleURL development version can be installed by cloning the git
-repository from `github`_::
+repository from [github](http://github.com/kracekumar/simpleurl)
 
-    git clone git@github.com:kracekumar/simpleurl.git
+    `git clone git@github.com:kracekumar/simpleurl.git`
 
-.. _github: http://github.com/kracekumar/simpleurl
+
