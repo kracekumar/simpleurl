@@ -13,10 +13,14 @@ Why not use regex based routing system?
 - Too complicated.
 
 - Easy to make mistake.
-    Example
-    -------
+
+    - Example
+      -------
+
+    ```
     @app.add_url_route('^/brubeck')
     @app.add_url_route('^/brubeck/\d')
+    ```
 
     Above regex routes seems to be different but not.
     Request - `/brubeck` and `/brubeck/1` will match first because
@@ -115,7 +119,8 @@ Reference
 ---------
 
 For more info about `Werkzeug Routing <http://werkzeug.pocoo.org/docs/routing/>`_.
-```
+
+
 Development
 -----------
 
