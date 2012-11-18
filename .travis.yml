@@ -6,10 +6,11 @@ python:
 #
 before_install:
   - sudo apt-get install libevent-dev
-  - pip install --use-mirrors gevent nose redis testtools
+  - pip install -r tests-requirements.txt --use-mirrors
 
 install:
   - python setup.py install
+
 
 # command to run tests
 script:
