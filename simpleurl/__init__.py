@@ -145,13 +145,22 @@ class SimpleURL(Brubeck):
     def route_message(self, message):
         self.url_rule_class.add = self.url_map
         # FIX ME: Figure out different values of url_scheme
-        # FIX ME: Convert brubeck message to WSGI Request so that it is easy to use bind_to_environ
-        # print type(message)
-        headers = message.headers
-        arguments = message.arguments or None
-        url_path = message.path
-        self.urls = self.url_map.bind(server_name=headers[u'host'], url_scheme=headers[u'VERSION'].split('/')[0],
-             default_method=message.method, path_info=url_path, query_args=arguments)
+
+        # check whether mongrel2 is serving or WSGI Server
+        if message.is_wsgi:
+            server_name = message.headers['HTTP_HOST']
+            url_scheme = message.headers['wsgi.url_scheme']
+            default_method = message.headers['METHOD']
+            path_info = message.path
+            arguments = message.arguments
+            self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
+                 default_method=default_method, path_info=path_info, query_args=arguments)
+        else:
+            headers = message.headers
+            arguments = message.arguments or None
+            url_path = message.path
+            self.urls = self.url_map.bind(server_name=headers[u'host'], url_scheme=headers[u'VERSION'].split('/')[0],
+                 default_method=message.method, path_info=url_path, query_args=arguments)
         endpoint = self.urls.match(message.path)
         kallable = self.view_functions[endpoint[0]]
         if inspect.isclass(kallable):

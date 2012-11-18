@@ -17,3 +17,6 @@ env/
 dev/
 error.log
 settings.py
+run/
+log/
+
