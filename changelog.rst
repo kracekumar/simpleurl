@@ -1,6 +1,12 @@
 SimpleURL changelog
 ===================
 
+Version 0.0.3
+-------------
+
+Released on 18th Nov, 2012
+- Fixed WSGI Support
+
 Version 0.0.2
 -------------
 

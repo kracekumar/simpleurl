@@ -3,13 +3,13 @@
 # Most of the code here is inspired from
 # https://github.com/mitsuhiko/flask/blob/master/flask/app.py
 
-version = "0.0.2"
-version_info = (0, 0, 2)
+version = "0.0.3"
+version_info = (0, 0, 3)
 
 import inspect
 
 from brubeck.request_handling import Brubeck
-from werkzeug.routing import Rule, Map
+from werkzeug.routing import Rule, Map, HTTPException, RequestRedirect
 
 
 # Helpers
@@ -147,24 +147,32 @@ class SimpleURL(Brubeck):
         # FIX ME: Figure out different values of url_scheme
 
         # check whether mongrel2 is serving or WSGI Server
+        handler = None
         if message.is_wsgi:
             server_name = message.headers['HTTP_HOST']
             url_scheme = message.headers['wsgi.url_scheme']
             default_method = message.headers['METHOD']
-            path_info = message.path
-            arguments = message.arguments
-            self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
-                 default_method=default_method, path_info=path_info, query_args=arguments)
         else:
-            headers = message.headers
-            arguments = message.arguments or None
-            url_path = message.path
-            self.urls = self.url_map.bind(server_name=headers[u'host'], url_scheme=headers[u'VERSION'].split('/')[0],
-                 default_method=message.method, path_info=url_path, query_args=arguments)
-        endpoint = self.urls.match(message.path)
-        kallable = self.view_functions[endpoint[0]]
-        if inspect.isclass(kallable):
-            raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
-        else:
-            handler = lambda: kallable(self, message, **endpoint[1])
-            return handler
+            server_name = message.headers[u'host']
+            url_scheme = message.headers[u'VERSION'].split('/')[0]
+            default_method = message.method
+        arguments = message.arguments or None
+        path_info = message.path
+        self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
+             default_method=default_method, path_info=path_info, query_args=arguments)
+        try:
+            endpoint = self.urls.match(message.path)
+            kallable = self.view_functions[endpoint[0]]
+            if inspect.isclass(kallable):
+                raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
+            else:
+                handler = lambda: kallable(self, message, **endpoint[1])
+                return handler
+        except RequestRedirect, e:
+            handler = self.base_handler(self, message)
+            handler.set_status(e.name)
+        except HTTPException, e:
+            handler = self.base_handler(self, message)
+            handler.set_status(e.name)
+
+        return handler
