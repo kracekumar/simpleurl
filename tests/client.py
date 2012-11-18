@@ -8,6 +8,9 @@ import requests
 URLS = {200: ['/', '/all/', '/all/2', '/float/3.14', '/int/3'],
     404: ['/foo', '/all']}
 
+from time import sleep
+sleep(5)
+
 
 class TestNoClassesSimpleURL(unittest.TestCase):
     def testURL(self):
