@@ -1,6 +1,8 @@
 SimpleURL
 =========
 
+   :image:: https://secure.travis-ci.org/kracekumar/simpleurl.png?branch=master
+   :target: http://travis-ci.org/kracekumar/simpleurl
 
 SimpleURL is based on Werkzeug routing system for Brubeck.
 
