@@ -11,6 +11,9 @@ import inspect
 from brubeck.request_handling import Brubeck
 from werkzeug.routing import Rule, Map, HTTPException, RequestRedirect
 
+# constants
+HTTP_METHODS = frozenset(['GET', 'HEAD', 'POST', 'PUT',
+    'DELETE', 'TRACE', 'OPTIONS', 'PATCH'])
 
 # Helpers
 def _return_func_name(view_func):
@@ -37,6 +40,24 @@ class SimpleURL(Brubeck):
         #: the values are the function objects themselves.
         #: To register a view function, use the :meth:`route` decorator.
         self.view_functions = {}
+        # if handler_tuples add routes
+        if brubeck_object.handler_tuples is not None:
+            self.handler_tuples = brubeck_object.handler_tuples
+
+    def init_routes(self, handler_tuples):
+        """Loops over a list of (rule, handler) tuples and adds them
+        to the routing table.
+        """
+        for ht in handler_tuples:
+            (rule, kallable) = ht
+            # create a instance of callable and then map respective http method to
+            # class method
+            obj = kallable(self, self.brubeck_object.message)
+            self.class_handlers.append({'rule': rule, 'methods': pair[0], 'kallable': kallable} for pair in inspect.getmembers(obj, predicate=inspect.ismethod) 
+                if pair[0].upper() in HTTP_METHODS)
+            #for method_tuple in class_method#
+            #print kallable.__dict__
+            #self.add_route_rule(rule, kallable)
 
     def add_route_url(self, rule, endpoint=None, view_func=None, **options):
         """Registration point for all URL rules.
@@ -89,7 +110,7 @@ class SimpleURL(Brubeck):
         # None if they are an empty dictionary.  This should not be necessary
         # with Werkzeug 0.7
         options['defaults'] = options.get('defaults') or None
-
+        print method
         rule = self.url_rule_class(rule, methods=method, **options)
         #rule.provide_automatic_options = provide_automatic_options
 
@@ -143,10 +164,25 @@ class SimpleURL(Brubeck):
         return decorator
 
     def route_message(self, message):
+        if self.handler_tuples is not None:
+            for ht in self.handler_tuples:
+                (rule, kallable) = ht
+                # create a instance of callable and then map respective http method to
+                # class method
+                #obj = kallable(self, message, )
+
+                for pair in inspect.getmembers(kallable, predicate=inspect.ismethod):
+                    method = pair[0].upper()
+                    if method in HTTP_METHODS:
+                        self.add_route_url(rule=rule, endpoint='_'.join([kallable.__name__, method]), method=[method], view_func=pair[1])
+        
         self.url_rule_class.add = self.url_map
+        #print "route_message"
+        #raise
         # FIX ME: Figure out different values of url_scheme
 
-        # check whether mongrel2 is serving or WSGI Server
+        # check whether mohttps://github.com/j2labs/brubeck/blob/master/brubeck/request.pyngrel2 is serving or WSGI Server
+        #print self.class_handlers
         handler = None
         if message.is_wsgi:
             server_name = message.headers['HTTP_HOST']
@@ -160,11 +196,17 @@ class SimpleURL(Brubeck):
         path_info = message.path
         self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
              default_method=default_method, path_info=path_info, query_args=arguments)
+        print self.urls.__dict__
         try:
             endpoint = self.urls.match(message.path)
+            #print endpoint
             kallable = self.view_functions[endpoint[0]]
             if inspect.isclass(kallable):
-                raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
+                obj = kallable()
+                handler = getattr(obj, default_method)(self, message)
+                handler._url_args = endpoint[-1]
+                #raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
+                return handler
             else:
                 handler = lambda: kallable(self, message, **endpoint[1])
                 return handler
