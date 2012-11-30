@@ -15,6 +15,7 @@ from werkzeug.routing import Rule, Map, HTTPException, RequestRedirect
 HTTP_METHODS = frozenset(['GET', 'HEAD', 'POST', 'PUT',
     'DELETE', 'TRACE', 'OPTIONS', 'PATCH'])
 
+
 # Helpers
 def _return_func_name(view_func):
     # helper to return func name for the url
@@ -43,6 +44,9 @@ class SimpleURL(Brubeck):
         # if handler_tuples add routes
         if brubeck_object.handler_tuples is not None:
             self.handler_tuples = brubeck_object.handler_tuples
+        # Keep state for handler_tuples so that we needn't add routes in route_message
+        # every time request is received
+        self.is_handler_tuples_added = False
 
     def init_routes(self, handler_tuples):
         """Loops over a list of (rule, handler) tuples and adds them
@@ -53,7 +57,7 @@ class SimpleURL(Brubeck):
             # create a instance of callable and then map respective http method to
             # class method
             obj = kallable(self, self.brubeck_object.message)
-            self.class_handlers.append({'rule': rule, 'methods': pair[0], 'kallable': kallable} for pair in inspect.getmembers(obj, predicate=inspect.ismethod) 
+            self.class_handlers.append({'rule': rule, 'methods': pair[0], 'kallable': kallable} for pair in inspect.getmembers(obj, predicate=inspect.ismethod)
                 if pair[0].upper() in HTTP_METHODS)
             #for method_tuple in class_method#
             #print kallable.__dict__
@@ -110,7 +114,6 @@ class SimpleURL(Brubeck):
         # None if they are an empty dictionary.  This should not be necessary
         # with Werkzeug 0.7
         options['defaults'] = options.get('defaults') or None
-        print method
         rule = self.url_rule_class(rule, methods=method, **options)
         #rule.provide_automatic_options = provide_automatic_options
 
@@ -163,26 +166,32 @@ class SimpleURL(Brubeck):
             return f
         return decorator
 
-    def route_message(self, message):
-        if self.handler_tuples is not None:
+    def check_handler_tuples(self):
+        if self.handler_tuples is not None and not self.is_handler_tuples_added:
             for ht in self.handler_tuples:
                 (rule, kallable) = ht
                 # create a instance of callable and then map respective http method to
                 # class method
                 #obj = kallable(self, message, )
-
-                for pair in inspect.getmembers(kallable, predicate=inspect.ismethod):
-                    method = pair[0].upper()
-                    if method in HTTP_METHODS:
-                        self.add_route_url(rule=rule, endpoint='_'.join([kallable.__name__, method]), method=[method], view_func=pair[1])
+                if not inspect.isclass(kallable):
+                    # currently tiple hadnlers don't mentin method make GET, HEAD as default
+                    self.add_route_url(rule=rule, method=['GET', 'HEAD'], view_func=kallable)
+                else:
+                    for pair in inspect.getmembers(kallable, predicate=inspect.ismethod):
+                        method = pair[0].upper()
+                        if method in HTTP_METHODS:
+                            self.add_route_url(rule=rule, endpoint='_'.join([kallable.__name__, method]), method=[method],
+                            view_func=kallable)
+            # set handler_tuples state to true
+            self.is_handler_tuples_added = True
         
+    def route_message(self, message):
+        self.check_handler_tuples()
         self.url_rule_class.add = self.url_map
-        #print "route_message"
-        #raise
         # FIX ME: Figure out different values of url_scheme
 
-        # check whether mohttps://github.com/j2labs/brubeck/blob/master/brubeck/request.pyngrel2 is serving or WSGI Server
-        #print self.class_handlers
+        # check whether mongrel2 is serving or WSGI Server
+        # https://github.com/j2labs/brubeck/blob/master/brubeck/request.py
         handler = None
         if message.is_wsgi:
             server_name = message.headers['HTTP_HOST']
@@ -196,14 +205,13 @@ class SimpleURL(Brubeck):
         path_info = message.path
         self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
              default_method=default_method, path_info=path_info, query_args=arguments)
-        print self.urls.__dict__
         try:
             endpoint = self.urls.match(message.path)
             #print endpoint
             kallable = self.view_functions[endpoint[0]]
             if inspect.isclass(kallable):
-                obj = kallable()
-                handler = getattr(obj, default_method)(self, message)
+                handler = kallable(self, message)
+                #handler = getattr(obj, default_method)(self, message)
                 handler._url_args = endpoint[-1]
                 #raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
                 return handler
