@@ -12,7 +12,10 @@ install:
   - python setup.py install
 
 
+before-script:
+    - python tests/server.py
+
 # command to run tests
 script:
-    - "nohup python tests/server.py &"
     - "python tests/client.py"
+
