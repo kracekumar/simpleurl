@@ -80,4 +80,5 @@ def new_name_handler(application, message, name):
 
 
 if __name__ == "__main__":
+    print("Run here")
     app.run()
