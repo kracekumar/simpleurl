@@ -3,8 +3,8 @@
 # Most of the code here is inspired from
 # https://github.com/mitsuhiko/flask/blob/master/flask/app.py
 
-version = "0.0.4"
-version_info = (0, 0, 4)
+version = "0.0.5"
+version_info = (0, 0, 5)
 
 import inspect
 
