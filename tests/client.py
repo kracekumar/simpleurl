@@ -5,20 +5,34 @@ import unittest
 import requests
 
 
-URLS = {200: ['/', '/all/', '/all/2', '/float/3.14', '/int/3'],
+GET_URLS = {200: ['/', '/all/', '/all/2', '/float/3.14', '/int/3',
+                '/class/class', '/deco/decorator', '/fun/fun'],
     404: ['/foo', '/all']}
+
+POST_URLS = {200: [
+                    {'url': '/class/class', 'data': {'framework': 'brubeck'}},
+                ],
+            }
 
 from time import sleep
 sleep(5)
 
 
 class TestNoClassesSimpleURL(unittest.TestCase):
-    def testURL(self):
-        for key, val in URLS.iteritems():
+    def testGetURL(self):
+        for key, val in GET_URLS.iteritems():
             for url in val:
                 self.assertEqual(\
                     requests.get("http://localhost:6767%s" % (url)).status_code,\
                      key)
+
+    def testPostURL(self):
+        for key, val in POST_URLS.iteritems():
+            for item in val:
+                self.assertEqual(\
+                    requests.post("http://localhost:6767%s" % (item['url']), data=item['data']).status_code,\
+                     key)
+
 
 if __name__ == '__main__':
     unittest.main()

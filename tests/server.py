@@ -7,10 +7,40 @@ sys.path.insert(0, os.path.dirname(os.path.abspath('.')))
 
 
 from simpleurl import SimpleURL
-from brubeck.request_handling import Brubeck, render
 from brubeck.connections import WSGIConnection
+from brubeck.request_handling import Brubeck, WebMessageHandler, render
 
-brubeck_app = Brubeck(msg_conn=WSGIConnection())
+
+class IndexHandler(WebMessageHandler):
+    def get(self):
+        self.set_body('Take five!')
+        return self.render()
+
+
+class NameHandler(WebMessageHandler):
+    def get(self, name):
+        self.set_body('Take five, %s!' % (name))
+        return self.render()
+
+    def post(self, name):
+        self.set_body('Take five post, {0} \n POST params: {1}\n'.format(name, self.message.arguments))
+        return self.render()
+
+
+def name_handler(application, message, name):
+    return render('Take five, %s!' % (name), 200, 'OK', {})
+
+
+urls = [('/class/<name>', NameHandler),
+        ('/fun/<name>', name_handler)
+        ]
+
+config = {
+    'msg_conn': WSGIConnection(),
+    'handler_tuples': urls,
+}
+
+brubeck_app = Brubeck(**config)
 app = SimpleURL(brubeck_app)
 
 body_success = u'Success'
@@ -42,6 +72,12 @@ def check_int(application, message, value):
 
 app.add_route_url('/', 'index', index)
 app.add_route_url('/one', 'one', one)
+
+
+@app.add_route('/deco/<name>', method='GET')
+def new_name_handler(application, message, name):
+    return render('Take five, %s!' % (name), 200, 'OK', {})
+
 
 if __name__ == "__main__":
     app.run()
