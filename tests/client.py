@@ -17,8 +17,6 @@ POST_URLS = {200: [
 from time import sleep
 sleep(5)
 
-import os
-print(os.system("ps aux"))
 
 class TestNoClassesSimpleURL(unittest.TestCase):
     def testGetURL(self):

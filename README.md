@@ -133,3 +133,10 @@ repository from [github](http://github.com/kracekumar/simpleurl)
     `git clone git@github.com:kracekumar/simpleurl.git`
 
 
+Testing
+-------
+```
+$ python tests/server.py
+$ python tests/client.py
+
+```
