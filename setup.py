@@ -77,6 +77,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     packages=['simpleurl'],
+    install_requires=open('requirements.txt', 'r').readlines(),
     include_package_data=True,
     zip_safe=False,
     platforms='any'

@@ -3,13 +3,15 @@
 # Most of the code here is inspired from
 # https://github.com/mitsuhiko/flask/blob/master/flask/app.py
 
-version = "0.0.5"
-version_info = (0, 0, 5)
+version = "0.0.6"
+version_info = (0, 0, 6)
 
 import inspect
 
 from brubeck.request_handling import Brubeck
-from werkzeug.routing import Rule, Map, HTTPException, RequestRedirect
+from werkzeug.routing import Rule, Map, HTTPException, RequestRedirect, BuildError
+from tldextract import extract
+
 
 # constants
 HTTP_METHODS = frozenset(['GET', 'HEAD', 'POST', 'PUT',
@@ -27,7 +29,7 @@ class SimpleURL(Brubeck):
     """SimpleURL is alternate to Brubeck Regex based routing.
     SimpleURL uses werkzeug routing to make routing simpler.
     """
-    def __init__(self, brubeck_object):
+    def __init__(self, brubeck_object, *args, **kwargs):
         super(Brubeck, self).__init__()
         # copy all brubeck object attributes to simpleurl.
         for key, val in brubeck_object.__dict__.iteritems():
@@ -47,6 +49,9 @@ class SimpleURL(Brubeck):
         # Keep state for handler_tuples so that we needn't add routes in route_message
         # every time request is received
         self.is_handler_tuples_added = False
+        #Set kwargs key, value since other extensions values may be passed
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def init_routes(self, handler_tuples):
         """Loops over a list of (rule, handler) tuples and adds them
@@ -59,9 +64,6 @@ class SimpleURL(Brubeck):
             obj = kallable(self, self.brubeck_object.message)
             self.class_handlers.append({'rule': rule, 'methods': pair[0], 'kallable': kallable} for pair in inspect.getmembers(obj, predicate=inspect.ismethod)
                 if pair[0].upper() in HTTP_METHODS)
-            #for method_tuple in class_method#
-            #print kallable.__dict__
-            #self.add_route_rule(rule, kallable)
 
     def add_route_url(self, rule, endpoint=None, view_func=None, **options):
         """Registration point for all URL rules.
@@ -188,6 +190,7 @@ class SimpleURL(Brubeck):
     def route_message(self, message):
         self.check_handler_tuples()
         self.url_rule_class.add = self.url_map
+        #print self.url_map, self.url_rule_class
         # FIX ME: Figure out different values of url_scheme
 
         # check whether mongrel2 is serving or WSGI Server
@@ -201,19 +204,17 @@ class SimpleURL(Brubeck):
             server_name = message.headers[u'host']
             url_scheme = message.headers[u'VERSION'].split('/')[0]
             default_method = message.method
+        subdomain = extract(server_name).subdomain
         arguments = message.arguments or None
         path_info = message.path
-        self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme,
+        self.urls = self.url_map.bind(server_name=server_name, url_scheme=url_scheme, subdomain=subdomain,
              default_method=default_method, path_info=path_info, query_args=arguments)
         try:
             endpoint = self.urls.match(message.path)
-            #print endpoint
             kallable = self.view_functions[endpoint[0]]
             if inspect.isclass(kallable):
                 handler = kallable(self, message)
-                #handler = getattr(obj, default_method)(self, message)
                 handler._url_args = endpoint[-1]
-                #raise NotImplementedError("SimpleURL doesn't support class based Routing yet :-(. Work in Progres")
                 return handler
             else:
                 handler = lambda: kallable(self, message, **endpoint[1])
@@ -226,3 +227,34 @@ class SimpleURL(Brubeck):
             handler.set_status(e.name)
 
         return handler
+
+    def url_for(self, endpoint, **values):
+        """
+        @app.route("/index")
+        def index(application, message):
+            return render("index", 200, 'OK', {})
+
+        @app.route("/<int:a>")
+        def handle_int(application, message, a):
+            return render("You passed int value:%s" % str(value), 200, 'OK', {})
+
+        @app.route('/test_endpoint', endpoint='test_endpoint')
+        def test(application, message):
+            return render("Test Endpoint", 200, 'OK', {})
+
+        @app.route('/test')
+        def test(application, message):
+            return render("url_for output: index: %s, handle_int: %s, test_endpoint: %s" %(app.url_for('index'),
+                app.url_for('handle_int', a=23),
+                app.url_for('test_endpoint', external=True)), 200, 'OK', {})
+        """
+        try:
+            external = False or values.pop('external', None)
+            method = 'GET' or values.pop('method', None)
+            defaults = self.urls.match(return_rule=True, path_info="")
+            return self.urls.build(endpoint=endpoint, force_external=external, method=method, values=values)
+        except BuildError, error:
+            #FIX ME: handle exception and give better message
+            raise Exception("url rule doesn't exist")
+        except AttributeError:
+            raise Exception("url_for must be called inside function or class method")
